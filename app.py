@@ -5,9 +5,10 @@ from matplotlib import font_manager
 import streamlit as st
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import streamlit as st
 
 # ================== 基础配置 ==================
-API_KEY = "02f6106b429a433480950a016b914563"
+API_KEY = st.secrets["API_KEY"]
 PRICE_URL = "https://open.steamdt.com/open/cs2/v1/price/single"
 DATA_FILE = Path("gloves.json")
 
@@ -325,3 +326,4 @@ st.dataframe(
         for w in st.session_state.weapons
     ]
 )
+
