@@ -83,7 +83,7 @@ DEFAULT_WEAPONS = [
 
 # ================== 字体 ==================
 # 1. 找你下载的字体（名字要和你上传的一样）
-font_path = Path(__file__).parent / "NotoSansSC-Regular.otf"
+font_path = Path(__file__).parent / "NotoSansCJKsc-Regular.otf"
 
 if font_path.exists():
     # 2. 注册字体
@@ -341,6 +341,7 @@ st.dataframe(
         for w in st.session_state.weapons
     ]
 )
+
 
 
 
