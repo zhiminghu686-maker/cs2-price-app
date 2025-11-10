@@ -82,24 +82,27 @@ DEFAULT_WEAPONS = [
 ]
 
 # ================== 字体 ==================
-# 这里要写你真正下载的那个名字！
+# 1. 找你下载的字体（名字要和你上传的一样）
 font_path = Path(__file__).parent / "NotoSansSC-Regular.otf"
 
 if font_path.exists():
-    # 注册这个字体
+    # 2. 注册字体
     font_manager.fontManager.addfont(str(font_path))
-    # 思源黑体简体的字体名是这个
-    plt.rcParams["font.family"] = "Noto Sans SC"
+    # 3. 动态获取这个字体真正的名字，避免写错
+    font_prop = font_manager.FontProperties(fname=str(font_path))
+    font_name = font_prop.get_name()
+    # 4. 告诉 matplotlib 用这个
+    plt.rcParams["font.family"] = font_name
 else:
-    # 本地 Windows 兜底
+    # 本地兜底
     win_font_path = r"C:\Windows\Fonts\msyh.ttc"
     if os.path.exists(win_font_path):
         font_manager.fontManager.addfont(win_font_path)
         plt.rcParams["font.family"] = "Microsoft YaHei"
     else:
-        # 再兜底一个常见的
         plt.rcParams["font.sans-serif"] = ["SimHei"]
 
+# 负号不变方块
 plt.rcParams["axes.unicode_minus"] = False
 
 # ================== 页面 ==================
@@ -338,6 +341,7 @@ st.dataframe(
         for w in st.session_state.weapons
     ]
 )
+
 
 
 
