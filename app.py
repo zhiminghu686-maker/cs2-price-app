@@ -82,17 +82,22 @@ DEFAULT_WEAPONS = [
 ]
 
 # ================== 字体 ==================
-font_path = Path(__file__).parent / "NotoSansCJKsc-Regular.otf"
+# 这里要写你真正下载的那个名字！
+font_path = Path(__file__).parent / "NotoSansSC-Regular.otf"
 
 if font_path.exists():
+    # 注册这个字体
     font_manager.fontManager.addfont(str(font_path))
-    plt.rcParams["font.family"] = "Noto Sans CJK"
+    # 思源黑体简体的字体名是这个
+    plt.rcParams["font.family"] = "Noto Sans SC"
 else:
+    # 本地 Windows 兜底
     win_font_path = r"C:\Windows\Fonts\msyh.ttc"
     if os.path.exists(win_font_path):
         font_manager.fontManager.addfont(win_font_path)
         plt.rcParams["font.family"] = "Microsoft YaHei"
     else:
+        # 再兜底一个常见的
         plt.rcParams["font.sans-serif"] = ["SimHei"]
 
 plt.rcParams["axes.unicode_minus"] = False
@@ -333,6 +338,7 @@ st.dataframe(
         for w in st.session_state.weapons
     ]
 )
+
 
 
 
