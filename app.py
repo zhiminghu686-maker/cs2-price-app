@@ -40,10 +40,10 @@ STEAMDT_NAME_MAP = {
     "运动手套 | 弹弓": "★ Sport Gloves | Slingshot (Field-Tested)",
     "运动手套 | 夜行衣": "★ Sport Gloves | Nocts (Field-Tested)",
     # 四把枪
-    "M4A4 | 反冲精英 (久经沙场)": "M4A4 | Temukau (Field-Tested)",
-    "AK-47 | 一发入魂 (久经沙场)": "AK-47 | Head Shot (Field-Tested)",
-    "USP 消音版 | 印花集 (久经沙场)": "USP-S | Printstream (Field-Tested)",
-    "AWP | 迷人眼 (久经沙场)": "AWP | Chromatic Aberration (Field-Tested)",
+    "M4A4 | 反冲精英": "M4A4 | Temukau (Field-Tested)",
+    "AK-47 | 一发入魂": "AK-47 | Head Shot (Field-Tested)",
+    "USP 消音版 | 印花集": "USP-S | Printstream (Field-Tested)",
+    "AWP | 迷人眼": "AWP | Chromatic Aberration (Field-Tested)",
 }
 
 # ================== 默认数据 ==================
@@ -75,34 +75,40 @@ DEFAULT_GLOVES = [
 ]
 
 DEFAULT_WEAPONS = [
-    {"name": "M4A4 | 反冲精英 (久经沙场)", "min_price": 0},
-    {"name": "AK-47 | 一发入魂 (久经沙场)", "min_price": 0},
-    {"name": "USP 消音版 | 印花集 (久经沙场)", "min_price": 0},
-    {"name": "AWP | 迷人眼 (久经沙场)", "min_price": 0},
+    {"name": "M4A4 | 反冲精英", "min_price": 0},
+    {"name": "AK-47 | 一发入魂", "min_price": 0},
+    {"name": "USP 消音版 | 印花集", "min_price": 0},
+    {"name": "AWP | 迷人眼", "min_price": 0},
 ]
 
+# ================== 材料枪磨损区间 ==================
+WEAR_RANGE = {
+    "M4A4 | 反冲精英": (0.0, 0.80),
+    "AK-47 | 一发入魂": (0.0, 1.0),
+    "AWP | 迷人眼": (0.0, 0.70),
+    "USP 消音版 | 印花集": (0.0, 0.85),
+}
+
+# ================== 手套固定磨损区间 + 各外观分档 ==================
+GLOVE_MIN = 0.06
+GLOVE_MAX = 0.80
+
+# 手套的品质区间（这是手套专用的那套）
+GLOVE_TIER = {
+    "崭新出厂 (FN)": (0.06, 0.07),
+    "略有磨损 (MW)": (0.07, 0.15),
+    "久经沙场 (FT)": (0.15, 0.38),
+    "破损不堪 (WW)": (0.38, 0.45),
+    "战痕累累 (BS)": (0.45, 0.80),
+}
+
 # ================== 字体 ==================
-# 1. 找你下载的字体（名字要和你上传的一样）
-font_path = Path(__file__).parent / "NotoSansCJKsc-Regular.otf"
-
-if font_path.exists():
-    # 2. 注册字体
-    font_manager.fontManager.addfont(str(font_path))
-    # 3. 动态获取这个字体真正的名字，避免写错
-    font_prop = font_manager.FontProperties(fname=str(font_path))
-    font_name = font_prop.get_name()
-    # 4. 告诉 matplotlib 用这个
-    plt.rcParams["font.family"] = font_name
-else:
-    # 本地兜底
-    win_font_path = r"C:\Windows\Fonts\msyh.ttc"
-    if os.path.exists(win_font_path):
-        font_manager.fontManager.addfont(win_font_path)
-        plt.rcParams["font.family"] = "Microsoft YaHei"
-    else:
-        plt.rcParams["font.sans-serif"] = ["SimHei"]
-
-# 负号不变方块
+font_path = r"C:\Windows\Fonts\msyh.ttc"
+try:
+    font_manager.fontManager.addfont(font_path)
+    plt.rcParams["font.family"] = "Microsoft YaHei"
+except Exception:
+    plt.rcParams["font.family"] = "sans-serif"
 plt.rcParams["axes.unicode_minus"] = False
 
 # ================== 页面 ==================
@@ -159,6 +165,27 @@ def update_all(items):
                 item["min_price"] = float(p)
                 updated += 1
     return updated
+
+def calc_max_material_float_for_glove_tier(material_name: str, target_glove_max: float):
+    """
+    给定：材料枪 + 想要的手套成色的上限
+    返回：这把材料枪最高能用多少磨损
+    """
+    if material_name not in WEAR_RANGE:
+        return None
+
+    mat_min, mat_max = WEAR_RANGE[material_name]
+
+    # 映射比例：手套目标在手套区间里的位置
+    ratio = (target_glove_max - GLOVE_MIN) / (GLOVE_MAX - GLOVE_MIN)
+    if ratio < 0:
+        return None
+
+    # 反推材料磨损
+    mat_float = mat_min + ratio * (mat_max - mat_min)
+
+    # 不超过材料自身最大磨损
+    return min(mat_float, mat_max)
 
 # ================== Sidebar：手套 ==================
 st.sidebar.subheader("🧤 手套操作")
@@ -243,8 +270,30 @@ st.sidebar.markdown(f"当前枪价：**{cur_weapon['min_price']:.2f}** 元")
 # 保存到文件
 save_data(st.session_state.gloves, st.session_state.weapons)
 
+# ================== 主区：反推材料最大磨损 ==================
+st.subheader("🧮 想要这种手套外观，我的材料枪最多能用多少磨损？")
+
+col_a, col_b = st.columns(2)
+with col_a:
+    sel_mat = st.selectbox("选择材料枪：", list(WEAR_RANGE.keys()), key="mat_for_inverse")
+with col_b:
+    sel_tier = st.selectbox("想要的手套外观：", list(GLOVE_TIER.keys()))
+
+tier_min, tier_max = GLOVE_TIER[sel_tier]
+
+if st.button("计算最大可用材料磨损", key="btn_calc_inverse"):
+    res = calc_max_material_float_for_glove_tier(sel_mat, tier_max)
+    if res is None:
+        st.error("无法计算，请检查区间。")
+    else:
+        st.success(
+            f"要合出 **{sel_tier}** 的手套，"
+            f"{sel_mat} 的磨损应 ≤ **{res:.6f}**"
+        )
+        st.caption("建议再多留 0.001~0.003 安全余量。")
+
 # ================== 主区：手套图表 ==================
-st.subheader("📊 手套价格展示图")
+st.subheader("📊 手套价格展示图(久经沙场)")
 
 # 计算手套平均价
 g_names = [g["name"] for g in st.session_state.gloves]
@@ -281,7 +330,7 @@ st.pyplot(fig)
 
 
 # ================== 主区：枪价格图表 ==================
-st.subheader("📊 炼金红皮价格展示图")
+st.subheader("📊 炼金红皮价格展示图(久经沙场)")
 
 # 原来的四把枪
 w_names = [w["name"] for w in st.session_state.weapons]
@@ -341,11 +390,3 @@ st.dataframe(
         for w in st.session_state.weapons
     ]
 )
-
-
-
-
-
-
-
-
