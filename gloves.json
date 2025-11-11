@@ -99,20 +99,21 @@
   ],
   "weapons": [
     {
-      "name": "M4A4 | 反冲精英 (久经沙场)",
+      "name": "M4A4 | 反冲精英",
       "min_price": 219.0
     },
     {
-      "name": "AK-47 | 一发入魂 (久经沙场)",
+      "name": "AK-47 | 一发入魂",
       "min_price": 218.5
     },
     {
-      "name": "USP 消音版 | 印花集 (久经沙场)",
+      "name": "USP 消音版 | 印花集",
       "min_price": 234.5
     },
     {
-      "name": "AWP | 迷人眼 (久经沙场)",
+      "name": "AWP | 迷人眼",
       "min_price": 218.0
     }
   ]
+
 }
