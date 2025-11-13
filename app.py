@@ -64,9 +64,9 @@ STEAMDT_NAME_MAP = {
     "运动手套 | 弹弓": "★ Sport Gloves | Slingshot (Field-Tested)",
     "运动手套 | 夜行衣": "★ Sport Gloves | Nocts (Field-Tested)",
     # 四把枪
-    "M4A4 | 反冲精英": "M4A4 | Temukau (Field-Tested)",
+    "M4A4 | 活色生香": "M4A4 | In Living Color (Field-Tested)",
     "AK-47 | 一发入魂": "AK-47 | Head Shot (Field-Tested)",
-    "USP 消音版 | 印花集": "USP-S | Printstream (Field-Tested)",
+    "USP 消音版 | 倒吊人": "USP-S | The Traitor (Field-Tested)",
     "AWP | 迷人眼": "AWP | Chromatic Aberration (Field-Tested)",
 }
 
@@ -99,18 +99,18 @@ DEFAULT_GLOVES = [
 ]
 
 DEFAULT_WEAPONS = [
-    {"name": "M4A4 | 反冲精英", "min_price": 0},
+    {"name": "M4A4 | 活色生香", "min_price": 0},
     {"name": "AK-47 | 一发入魂", "min_price": 0},
-    {"name": "USP 消音版 | 印花集", "min_price": 0},
+    {"name": "USP 消音版 | 倒吊人", "min_price": 0},
     {"name": "AWP | 迷人眼", "min_price": 0},
 ]
 
 # ================== 材料枪磨损区间 ==================
 WEAR_RANGE = {
-    "M4A4 | 反冲精英": (0.0, 0.80),
+    "M4A4 | 活色生香": (0.0, 0.79),
     "AK-47 | 一发入魂": (0.0, 1.0),
     "AWP | 迷人眼": (0.0, 0.70),
-    "USP 消音版 | 印花集": (0.0, 0.85),
+    "USP 消音版 | 倒吊人": (0.0, 1.0),
 }
 
 # ================== 手套固定磨损区间 + 各外观分档 ==================
@@ -128,7 +128,29 @@ GLOVE_TIER = {
 
 # ================== 页面 ==================
 st.set_page_config(page_title="CS2 变革/反冲炼金收益展示", layout="wide")
-st.title("🎮 CS2 变革/反冲炼金收益展示")
+st.title("🎮 CS2 蛇噬/反冲炼金收益展示")
+
+# ========== 工具函数：材料磨损 -> 手套磨损（线性反映射） ==========
+def mat_float_to_glove_float(material_name: str, mat_float: float):
+    if material_name not in WEAR_RANGE:
+        return None
+    m_min, m_max = WEAR_RANGE[material_name]
+    if m_max <= m_min:
+        return None
+    # 夹紧到材料自身区间
+    mf = max(m_min, min(m_max, mat_float))
+    pos = (mf - m_min) / (m_max - m_min)  # 映射到[0,1]
+    glove_f = GLOVE_MIN + pos * (GLOVE_MAX - GLOVE_MIN)
+    # 再夹紧到手套区间
+    glove_f = max(GLOVE_MIN, min(GLOVE_MAX, glove_f))
+    return round(glove_f, 6)
+
+def classify_glove_tier(glove_float: float):
+    for tier_name, (lo, hi) in GLOVE_TIER.items():
+        if lo <= glove_float <= hi:
+            return tier_name
+    # 落在区间边界外时给出最近的档位提示
+    return None
 
 # ================== 文件读写 ==================
 def load_data():
@@ -307,6 +329,73 @@ if st.button("计算最大可用材料磨损", key="btn_calc_inverse"):
         )
         st.caption("建议再多留 0.001~0.003 安全余量。")
 
+# ========== 主区：选择5把材料枪 + 输入各自磨损 ==========
+st.subheader("🧪 选择5把材料枪 + 自填磨损 → 计算合成手套磨损（线性模型）")
+
+# 可重复选择，所以做成5行选择器
+mat_sel = []
+for i in range(5):
+    c1, c2, c3 = st.columns([1.2, 1.0, 1.6])
+    with c1:
+        name = st.selectbox(
+            f"第{i+1}把材料枪类型",
+            list(WEAR_RANGE.keys()),
+            key=f"mat_pick_{i}"
+        )
+    m_min, m_max = WEAR_RANGE[name]
+    with c2:
+        wear = st.number_input(
+            f"磨损{i+1}",
+            min_value=float(m_min),
+            max_value=float(m_max),
+            value=float(m_min),
+            step=0.0001,
+            format="%.6f",
+            key=f"mat_wear_{i}"
+        )
+    with c3:
+        st.caption(f"允许磨损：[{m_min:.2f} ~ {m_max:.2f}]")
+    mat_sel.append((name, wear))
+
+if st.button("计算合成手套磨损", key="btn_calc_forward"):
+    mapped = []
+    for (n, w) in mat_sel:
+        g = mat_float_to_glove_float(n, w)
+        if g is None:
+            st.error(f"无法映射：{n}")
+            mapped = []
+            break
+        mapped.append({"材料枪": n, "材料磨损": w, "映射到手套磨损": g})
+
+    if mapped:
+        # 平均得到最终手套磨损
+        g_vals = [x["映射到手套磨损"] for x in mapped]
+        g_avg = sum(g_vals) / len(g_vals)
+        tier = classify_glove_tier(g_avg)
+
+        st.markdown("**单把映射明细：**")
+        st.dataframe(mapped, use_container_width=True)
+
+        st.success(f"➡️ 计算得到的 **手套磨损**：**{g_avg:.6f}**")
+        if tier:
+            st.info(f"预计成色：**{tier}**  （区间：{GLOVE_TIER[tier][0]:.2f}~{GLOVE_TIER[tier][1]:.2f}）")
+        else:
+            st.warning("未能匹配到手套成色区间（可能数值越界或配置问题）")
+
+        # 可视化：5把映射 & 平均线
+        fig_fw, ax_fw = plt.subplots(figsize=(8, 2.8))
+        xs = range(1, 6)
+        ax_fw.bar(xs, g_vals)
+        ax_fw.axhline(g_avg, linestyle="--")
+        ax_fw.set_xticks(xs)
+        ax_fw.set_xticklabels([f"{i}" for i in xs])
+        ax_fw.set_ylabel("映射到手套磨损")
+        ax_fw.set_title("5把材料映射到手套磨损（越低越好）")
+        for i, v in enumerate(g_vals, start=1):
+            ax_fw.text(i, v, f"{v:.3f}", ha="center", va="bottom", fontsize=9)
+        ax_fw.text(5.8, g_avg, f"平均：{g_avg:.3f}", ha="right", va="bottom")
+        st.pyplot(fig_fw)
+
 # ================== 主区：手套图表 ==================
 st.subheader("📊 手套价格展示图(久经沙场)")
 
@@ -405,6 +494,3 @@ st.dataframe(
         for w in st.session_state.weapons
     ]
 )
-
-
-
