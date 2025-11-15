@@ -304,7 +304,7 @@ st.sidebar.markdown(f"当前枪价：**{cur_weapon['min_price']:.2f}** 元")
 save_data(st.session_state.gloves, st.session_state.weapons)
 
 # ================== 页面 ==================
-st.set_page_config(page_title="CS2 变革/反冲炼金收益展示", layout="wide")
+st.set_page_config(page_title="CS2 蛇噬/反冲炼金收益展示", layout="wide")
 st.title("🎮 CS2 蛇噬/反冲炼金收益展示")
 
 # ================== 主区：反推材料最大磨损 ==================
@@ -496,3 +496,4 @@ st.dataframe(
         for w in st.session_state.weapons
     ]
 )
+
