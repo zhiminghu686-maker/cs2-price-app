@@ -226,14 +226,6 @@ glove_names = [g["name"] for g in st.session_state.gloves]
 sel_glove = st.sidebar.selectbox("选择手套：", glove_names)
 cur_glove = next(g for g in st.session_state.gloves if g["name"] == sel_glove)
 
-glove_val = st.sidebar.number_input(
-    "手套最低价（手动）",
-    0.0, 99999.0,
-    float(cur_glove["min_price"]),
-    1.0,
-    key="glove_input"
-)
-
 col1, col2 = st.sidebar.columns(2)
 btn_g1 = col1.button("🧤 刷新当前")
 btn_g2 = col2.button("🔁 刷新全部")
@@ -254,9 +246,6 @@ if btn_g2:
     with st.spinner("⚙️ 正在刷新所有手套..."):
         n = update_all(st.session_state.gloves)
     st.sidebar.success(f"✅ 已刷新 {n} 只手套")
-else:
-    # 没点按钮就是手动改
-    cur_glove["min_price"] = glove_val
 
 st.sidebar.markdown(f"当前手套价：**{cur_glove['min_price']:.2f}** 元")
 
@@ -266,14 +255,6 @@ st.sidebar.subheader("🔫 枪操作")
 weapon_names = [w["name"] for w in st.session_state.weapons]
 sel_weapon = st.sidebar.selectbox("选择枪：", weapon_names)
 cur_weapon = next(w for w in st.session_state.weapons if w["name"] == sel_weapon)
-
-weapon_val = st.sidebar.number_input(
-    "枪最低价（手动）",
-    0.0, 99999.0,
-    float(cur_weapon["min_price"]),
-    1.0,
-    key="weapon_input"
-)
 
 col3, col4 = st.sidebar.columns(2)
 btn_w1 = col3.button("🔫 刷新当前枪")
@@ -295,8 +276,6 @@ if btn_w2:
     with st.spinner("⚙️ 正在刷新所有枪..."):
         n = update_all(st.session_state.weapons)
     st.sidebar.success(f"✅ 已刷新 {n} 把枪")
-else:
-    cur_weapon["min_price"] = weapon_val
 
 st.sidebar.markdown(f"当前枪价：**{cur_weapon['min_price']:.2f}** 元")
 
@@ -496,4 +475,5 @@ st.dataframe(
         for w in st.session_state.weapons
     ]
 )
+
 
